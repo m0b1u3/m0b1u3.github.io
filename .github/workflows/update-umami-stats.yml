@@ -23,7 +23,7 @@ jobs:
           UMAMI_STATS_START: 2024-01-01
         run: |
           node <<'NODE'
-          const { readFile, writeFile } = require('node:fs/promises');
+          import { readFile, writeFile } from 'node:fs/promises';
 
           const apiKey = process.env.UMAMI_API_KEY;
           const websiteId = process.env.UMAMI_WEBSITE_ID;
