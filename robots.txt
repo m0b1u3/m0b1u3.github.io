@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /archives/
+Allow: /categories/
+Allow: /tags/
+Allow: /about/
+
+Disallow: /admin/
+
+Sitemap: https://pwned.icu/sitemap.xml
+Sitemap: https://pwned.icu/baidusitemap.xml 

