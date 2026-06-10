@@ -1,0 +1,90 @@
+name: Update Umami Stats
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  update-umami-stats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update stats JSON
+        env:
+          UMAMI_API_KEY: ${{ secrets.UMAMI_API_KEY }}
+          UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}
+          UMAMI_API_BASE: https://api.umami.is/v1
+          UMAMI_STATS_START: 2024-01-01
+        run: |
+          node <<'NODE'
+          const { readFile, writeFile } = require('node:fs/promises');
+
+          const apiKey = process.env.UMAMI_API_KEY;
+          const websiteId = process.env.UMAMI_WEBSITE_ID;
+          const apiBase = process.env.UMAMI_API_BASE || 'https://api.umami.is/v1';
+          const startDate = process.env.UMAMI_STATS_START || '2024-01-01';
+          const outputPath = 'umami-stats.json';
+
+          if (!apiKey) throw new Error('UMAMI_API_KEY is required');
+          if (!websiteId) throw new Error('UMAMI_WEBSITE_ID is required');
+
+          const startAt = new Date(startDate).getTime();
+          if (Number.isNaN(startAt)) {
+            throw new Error(`Invalid UMAMI_STATS_START: ${startDate}`);
+          }
+
+          const endpoint = new URL(`${apiBase.replace(/\/$/, '')}/websites/${websiteId}/stats`);
+          endpoint.searchParams.set('startAt', String(startAt));
+          endpoint.searchParams.set('endAt', String(Date.now()));
+
+          const response = await fetch(endpoint, {
+            headers: {
+              Accept: 'application/json',
+              'x-umami-api-key': apiKey,
+            },
+          });
+
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`Umami API request failed (${response.status}): ${body}`);
+          }
+
+          const stats = await response.json();
+          const payload = {
+            generatedAt: new Date().toISOString(),
+            startAt: startDate,
+            pageviews: Number(stats.pageviews || 0),
+            visitors: Number(stats.visitors || 0),
+          };
+
+          const next = `${JSON.stringify(payload, null, 2)}\n`;
+          let previous = null;
+          try {
+            previous = await readFile(outputPath, 'utf8');
+          } catch {}
+
+          if (previous !== next) {
+            await writeFile(outputPath, next, 'utf8');
+            console.log(`Updated ${outputPath}`);
+          } else {
+            console.log('Umami stats unchanged');
+          }
+          NODE
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet -- umami-stats.json; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add umami-stats.json
+          git commit -m "chore: update Umami stats"
+          git push
