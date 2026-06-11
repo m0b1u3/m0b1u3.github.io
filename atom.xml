@@ -6,7 +6,7 @@
   <link href="https://pwned.icu/atom.xml" rel="self"/>
   
   <link href="https://pwned.icu/"/>
-  <updated>2026-06-10T16:34:53.128Z</updated>
+  <updated>2026-06-11T03:19:18.114Z</updated>
   <id>https://pwned.icu/</id>
   
   <author>
@@ -21,7 +21,7 @@
     <link href="https://pwned.icu/2026/06/10/%E5%86%B0%E8%9D%8E4.1-Java%E5%86%85%E5%AD%98%E9%A9%AC%E6%B3%A8%E5%85%A5%E9%93%BE%E5%88%86%E6%9E%90/"/>
     <id>https://pwned.icu/2026/06/10/%E5%86%B0%E8%9D%8E4.1-Java%E5%86%85%E5%AD%98%E9%A9%AC%E6%B3%A8%E5%85%A5%E9%93%BE%E5%88%86%E6%9E%90/</id>
     <published>2026-06-10T08:54:01.000Z</published>
-    <updated>2026-06-10T16:34:53.128Z</updated>
+    <updated>2026-06-11T03:19:18.114Z</updated>
     
     
     <summary type="html">拆解冰蝎 4.1 在 Java 场景下的内存马注入链，聚焦 JSP Shell、Javassist、Instrumentation 与 Agent 注入路径的关键衔接点。</summary>
@@ -48,7 +48,7 @@
     <link href="https://pwned.icu/2026/06/10/Java%E5%86%85%E5%AD%98%E9%A9%AC%E7%B1%BB%E5%9E%8B%E5%9F%BA%E7%A1%80%E4%B8%8E%E6%89%AB%E6%8F%8F%E5%88%87%E5%85%A5%E7%82%B9/"/>
     <id>https://pwned.icu/2026/06/10/Java%E5%86%85%E5%AD%98%E9%A9%AC%E7%B1%BB%E5%9E%8B%E5%9F%BA%E7%A1%80%E4%B8%8E%E6%89%AB%E6%8F%8F%E5%88%87%E5%85%A5%E7%82%B9/</id>
     <published>2026-06-10T08:53:22.000Z</published>
-    <updated>2026-06-10T16:34:53.046Z</updated>
+    <updated>2026-06-11T03:18:57.055Z</updated>
     
     
     <summary type="html">从 Filter、Servlet、Listener 到 Spring、Tomcat、Agent，系统梳理 Java 内存马的常见类型与扫描落点。</summary>
@@ -64,9 +64,9 @@
     
     <category term="Web安全" scheme="https://pwned.icu/tags/Web%E5%AE%89%E5%85%A8/"/>
     
-    <category term="安全防护" scheme="https://pwned.icu/tags/%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4/"/>
-    
     <category term="内存马" scheme="https://pwned.icu/tags/%E5%86%85%E5%AD%98%E9%A9%AC/"/>
+    
+    <category term="安全防护" scheme="https://pwned.icu/tags/%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4/"/>
     
   </entry>
   
@@ -75,7 +75,7 @@
     <link href="https://pwned.icu/2025/05/10/Java%20Web%E5%BA%94%E7%94%A8%E9%89%B4%E6%9D%83%E7%BB%95%E8%BF%87%E5%88%86%E6%9E%90/"/>
     <id>https://pwned.icu/2025/05/10/Java%20Web%E5%BA%94%E7%94%A8%E9%89%B4%E6%9D%83%E7%BB%95%E8%BF%87%E5%88%86%E6%9E%90/</id>
     <published>2025-05-09T16:30:56.000Z</published>
-    <updated>2025-06-05T15:31:48.417Z</updated>
+    <updated>2026-06-10T08:12:06.992Z</updated>
     
     
     <summary type="html">深入分析Java Web应用中的鉴权绕过漏洞，包括Servlet过滤器绕过、路径参数污染、Spring拦截器绕过、Shiro鉴权绕过等常见安全问题的原理、利用方法和防护措施</summary>
@@ -91,11 +91,11 @@
     
     <category term="Web安全" scheme="https://pwned.icu/tags/Web%E5%AE%89%E5%85%A8/"/>
     
+    <category term="安全防护" scheme="https://pwned.icu/tags/%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4/"/>
+    
     <category term="鉴权绕过" scheme="https://pwned.icu/tags/%E9%89%B4%E6%9D%83%E7%BB%95%E8%BF%87/"/>
     
     <category term="漏洞分析" scheme="https://pwned.icu/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
-    
-    <category term="安全防护" scheme="https://pwned.icu/tags/%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4/"/>
     
   </entry>
   
@@ -104,7 +104,7 @@
     <link href="https://pwned.icu/2024/09/10/Java%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B%E4%B8%8EMVC%E6%9E%B6%E6%9E%84/"/>
     <id>https://pwned.icu/2024/09/10/Java%E5%88%86%E5%B1%82%E6%A8%A1%E5%9E%8B%E4%B8%8EMVC%E6%9E%B6%E6%9E%84/</id>
     <published>2024-09-09T16:30:56.000Z</published>
-    <updated>2025-06-05T15:31:48.418Z</updated>
+    <updated>2026-06-10T08:12:06.993Z</updated>
     
     
     <summary type="html">详细介绍Java EE分层模型架构设计，包括客户端层、表示层、业务逻辑层、数据访问层等，以及MVC设计模式在Java Web开发中的应用和各种MVC框架对比分析</summary>
@@ -131,7 +131,7 @@
     <link href="https://pwned.icu/2024/03/29/Hello-m0b1u3/"/>
     <id>https://pwned.icu/2024/03/29/Hello-m0b1u3/</id>
     <published>2024-03-28T18:37:12.000Z</published>
-    <updated>2026-05-21T16:32:41.196Z</updated>
+    <updated>2026-06-10T08:12:06.992Z</updated>
     
     
     <summary type="html">TraceSec技术博客的开篇文章，由m0b1u3创建，专注于Java安全研究、Web应用安全分析、网络安全技术分享和漏洞研究</summary>
